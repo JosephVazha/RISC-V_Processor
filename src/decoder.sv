@@ -21,7 +21,7 @@ assign funct7 = instr[31:25];
 
 always_comb begin
     unique case (opcode)
-        7'b0010011, 7'b0000011: begin // I type instruction (immediate arithmetic, load)
+        7'b0010011, 7'b0000011, 7'b1100111: begin // I type instruction (immediate arithmetic, load)
             imm_val = {{20{instr[31]}},instr[31:20]};
         end
         7'b0100011: begin // S type instruction (store)

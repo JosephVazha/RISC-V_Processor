@@ -25,12 +25,12 @@ module alu (
                 alu_out = ($signed(op1) < $signed(op2)) ? 32'b1 : 32'b0;
             4'b0110: // sltu
                 alu_out = (op1 < op2) ? 32'b1 : 32'b0;
-            4'b0111: // and
-                alu_out = op1 & op2;
+            4'b0111: // xor
+                alu_out = op1 ^ op2;
             4'b1000: // or
                 alu_out = op1 | op2;
-            4'b1001: // xor
-                alu_out = op1 ^ op2;
+            4'b1001: // and
+                alu_out = op1 & op2;
         endcase
     end
 
