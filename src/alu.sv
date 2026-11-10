@@ -16,10 +16,15 @@ module alu (
             4'b0001: // sub
                 alu_out = op1 - op2;
             4'b0010: // sll
+                alu_out = op1 << op2[4:0]; // shifts op1 by amount specified in lower 5 bits of op2
             4'b0011: // srl
+                alu_out = op1 >> op2[4:0];
             4'b0100: // sra
+                alu_out = op1 >>> op2[4:0];
             4'b0101: // slt
+                alu_out = ($signed(op1) < $signed(op2)) ? 32'b1 : 32'b0;
             4'b0110: // sltu
+                alu_out = (op1 < op2) ? 32'b1 : 32'b0;
             4'b0111: // and
                 alu_out = op1 & op2;
             4'b1000: // or

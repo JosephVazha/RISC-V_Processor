@@ -28,7 +28,7 @@ module register_file (
                 registers[i] <= 32'b0;
             end
         end
-        else if (wren && rd != 5'd0) begin
+        else if (wren && rd != 5'd0) begin // destination register isn't x0
             registers[rd] <= rdv;
         end
     end
