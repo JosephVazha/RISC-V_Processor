@@ -8,7 +8,7 @@ module register_file (
 
     input logic [4:0] rd, // destination register
     input logic [31:0] rdv,
-
+    
     output logic [31:0] rs1v, // source register values
     output logic [31:0] rs2v
 );
