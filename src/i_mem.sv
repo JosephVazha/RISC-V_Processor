@@ -1,36 +1,25 @@
-module register_file (
-    input logic clk,
-    input logic rst,
-    input logic wren,
-
-    input logic [4:0] rs1, // source register addresses
-    input logic [4:0] rs2,
-
-    input logic [4:0] rd, // destination register
-    input logic [31:0] rdv,
-    
-    output logic [31:0] rs1v, // source register values
-    output logic [31:0] rs2v
+module i_mem  (
+   input logic clk,
+   input logic rst,
+   input logic [31:0] Addr
+   output logic [31:0] ir
+   
 );
 
-    logic [31:0] registers [31:0]; // stores 32 registers
+   logic [31:0] mem [255:0]; // 256 x 32 bit mem
 
-// read
-    always_comb begin
-        rs1v = registers[rs1];
-        rs2v = registers[rs2];
+   always_ff@(posedge clk) begin
+      ir <= mem[Addr[9:2]];
+   end
+endmodule
+
+module instruction_register (
+    input  logic        clk,
+    input  logic        rst,
+    input  logic [31:0] instruction_in,
+    output logic [31:0] ir
+);
+    always_ff @(posedge clk or posedge rst) begin
+            ir <= instruction_in;
     end
-
-// write
-    always_ff begin
-        if (rst) begin
-            for (int i=0; i<32; i++) begin
-                registers[i] <= 32'b0;
-            end
-        end
-        else if (wren && rd != 5'd0) begin // destination register isn't x0
-            registers[rd] <= rdv;
-        end
-    end
-
 endmodule
