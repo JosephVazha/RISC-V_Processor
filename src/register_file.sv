@@ -22,7 +22,7 @@ module register_file (
     end
 
 // write
-    always_ff begin
+    always_ff @(posedge clk or posedge rst) begin
         if (rst) begin
             for (int i=0; i<32; i++) begin
                 registers[i] <= 32'b0;

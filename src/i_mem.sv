@@ -1,3 +1,5 @@
+//Instruction Memory Module
+
 module i_mem  (
    input logic clk,
    input logic rst,
@@ -7,10 +9,14 @@ module i_mem  (
 );
 
    logic [31:0] mem [255:0]; // 256 x 32 bit mem
-
-   always_ff@(posedge clk) begin
-      ir <= mem[Addr[9:2]];
+   
+   //Loading isnt mem from the memh file obj code file from linker scirpt
+   initial begin 
+      $readmemh("sim/program.memh", mem);
    end
+   
+   ir <= mem[Addr[9:2]];
+   
 endmodule
 
 module instruction_register (

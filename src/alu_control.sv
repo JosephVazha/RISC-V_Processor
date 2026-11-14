@@ -1,13 +1,25 @@
 module alu_control(
-    input logic [5:0] opcode,
+    input logic [6:0] opcode,
     input logic [2:0] funct3,
     input logic [6:0] funct7,
 
-    output logic [3:0] alu_ctrl
+    output logic [3:0] alu_control
 );
-
+   
     always_comb begin
-        // add, addi
+//        alu_ctrl = 4'b1111;
+//        case (opcode):
+//            7'b011011:
+//               case (funct3):
+//                  3'b000:
+//                     case (funct7):
+//                        7'b0000000:
+//                           alu_control = ALU_ADD;
+//                        7'b0100000:
+//   
+        
+         alu_control = 4'b1111;
+         // add, addi
         if ((opcode == 7'b0110011 && funct3 == 3'b000 && funct7 == 7'b0000000)
         || (opcode == 7'b0010011 && funct3 == 3'b000)) begin
             alu_control = 4'b0000;
@@ -16,7 +28,8 @@ module alu_control(
         if (opcode == 7'b0110011 && funct3 == 3'b000 && funct7 == 7'b0100000) begin
             alu_control = 4'b0001;
         end
-        // sll, slli
+        // sll, slli - check funct7??
+///FUCNT7 check needed?
         if ((opcode == 7'b0110011 && funct3 == 3'b001)
         || (opcode == 7'b0010011 && funct3 == 3'b001)) begin
             alu_control = 4'b0010;

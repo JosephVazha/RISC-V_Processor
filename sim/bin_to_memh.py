@@ -2,6 +2,8 @@
 from pathlib import Path
 import sys
 
+MAX_INSTR = 256
+
 if len(sys.argv) != 3:
     print(f"Usage: {sys.argv[0]} input.bin output.memh")
     raise SystemExit(1)
@@ -14,11 +16,18 @@ data = input_path.read_bytes()
 # Pad to a whole number of 32-bit words.
 data += b"\x00" * ((-len(data)) % 4)
 
+instr_count = len(data) // 4
+
+if instr_count > MAX_INSTR:
+   print(f"Error: Program is {instr_count} instructions"
+         f"but Instruction Memory holds only {MAX_INSTR} instructions")
+   raise SystemExit(1)
+
 with output_path.open("w") as f:
     for offset in range(0, len(data), 4):
         # RISC-V binaries are little-endian.
         word = int.from_bytes(data[offset:offset + 4], byteorder="little")
         f.write(f"{word:08x}\n")
 
-print(f"Wrote {len(data) // 4} words to {output_path}")
+print(f"Wrote {len(data) // 4} instructions to {output_path}")
 
