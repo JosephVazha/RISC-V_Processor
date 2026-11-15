@@ -1,26 +1,26 @@
-module processor_top (
+module top (
    input    logic          clk,
    input    logic          reset,
    input    logic          branch_taken,
    input    logic [31:0]   branch_target,
    output   logic [31:0]   pc,
-   output   logic [31:0]   inctruction
+   output   logic [31:0]   instruction
 );
       
-   logic [31:0] rs1v, rs2v;
+   logic [31:0] rs1v, rs2v, rdv;
    logic [4:0] rs1, rs2, rd;
    logic [6:0] opcode, funct7;
    logic [2:0] funct3;
    
    logic wr_en;
-   logic
+
    
-   program_counter pc (
+   program_counter program_counter (
       .clk           (clk),
       .reset         (reset),
       .pc_sel  (branch_taken),
       .PC_in   (branch_target),
-      ,PC_out  (PC_out)
+      .PC_out  (PC_out)
    );
 
    memory #(
@@ -35,20 +35,32 @@ module processor_top (
       .imem_address  (pc),
       .imem_data_out (instruction),
       .dmem_data_out (unuse)
-   )
+   );
+   decoder decoder (
+      .clk           (clk),
+      .rst           (reset),
+      .instr         (instruction),
+      .opcode        (opcode),
+      .rd            (rd),
+      .funct3        (funct3),
+      .rs1           (rs1),
+      .rs2           (rs2),
+      .funct7        (funct7),
+      .imm_val       (imm_val)
+   );
    
    register_file register_file (
-      .clk            (clk),
-      .rst            (reset),
-      .wren           (wr_en),
+      .clk           (clk),
+      .rst           (reset),
+      .wren          (wr_en),
 
-      .rs1            (rs1),
-      .rs2            (rs2),
-      .rd             (rd),
-      .rdv
+      .rs1           (rs1),
+      .rs2           (rs2),
+      .rd            (rd),
+      .rdv           (rdv),
       .rs1v           (rs1v),
       .rs2v           (rs2v)
-   )
+   );
    
    alu_control alu_control_unit (
       .opcode        (opcode),
