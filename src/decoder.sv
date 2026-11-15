@@ -1,3 +1,5 @@
+//immed value gen
+
 module decoder(
     input logic clk,
     input logic rst,

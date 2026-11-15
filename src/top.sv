@@ -1,41 +1,51 @@
-module top (
-   input    logic          clk,
-   input    logic          reset,
-   input    logic          branch_taken,
-   input    logic [31:0]   branch_target,
-   output   logic [31:0]   pc,
-   output   logic [31:0]   instruction
-);
+module top #(
+   parameter IMem = "sim/program"
+   ) (
+   input logic clk,
+   input logic reset
+   );
+   logic          branch_taken;
+   logic [31:0]   branch_target;
+   logic [31:0]   pc;
+   logic [31:0]   instruction;
+
       
    logic [31:0] rs1v, rs2v, rdv;
    logic [4:0] rs1, rs2, rd;
    logic [6:0] opcode, funct7;
-   logic [2:0] funct3;
+   logic [2:0] funct3, rd_sel;
+   logic sel_op1, sel_op2;
    
    logic wr_en;
 
    
    program_counter program_counter (
-      .clk           (clk),
-      .reset         (reset),
-      .pc_sel  (branch_taken),
-      .PC_in   (branch_target),
-      .PC_out  (PC_out)
+      .clk              (clk),
+      .reset            (reset),
+      .pc_sel           (branch_taken),
+      .branch_target    (branch_target),
+      .PC_in   (pc),
+      .PC_out  (pc)
    );
 
    memory #(
-      .Addr    (PC_out),
-      .ir      (instruction)
+      .IMEM_INIT_FILE_PREFIX (IMem)
    ) memory_unit (
       .clk           (clk),
-      .func3         (3'b000),
+      .funct3         (3'b000),
       .dmem_wren     (1'b0),
       .dmem_address  (32'b0),
       .dmem_data_in  (32'b0),
       .imem_address  (pc),
       .imem_data_out (instruction),
-      .dmem_data_out (unuse)
+      .dmem_data_out (unuse),
+      .reset         (),
+      .led           (),
+      .red           (),
+      .green         (),
+      .blue          ()
    );
+
    decoder decoder (
       .clk           (clk),
       .rst           (reset),
@@ -67,6 +77,5 @@ module top (
       .funct3        (funct3),
       .funct7        (funct7),
       .alu_control   (alu_ctrl),
-      .alu_out       (alu_result)
    );
 endmodule
