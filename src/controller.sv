@@ -40,6 +40,14 @@ module controller (
     logic [3:0] alu_ctrl;
     logic [31:0] alu_out;
 
+    localparam FETCH_INSTRUCTION = 2'b0;
+    localparam DECODE_INSTRUCTION = 2'b01;
+    localparam ALU = 2'b10;
+    localparam STORE_RDV = 2'b11;
+
+    logic state = FETCH_INSTRUCTION;
+    logic next_state;
+
     program_counter u1 (
         // inputs
         .clk        (clk),
@@ -97,6 +105,54 @@ module controller (
         // outputs
         .alu_out    (alu_out)
     );
+
+    // main controller state machine
+    always_comb begin
+        next_state = state;
+        unique case (state)
+            FETCH_INSTRUCTION: begin
+                next_state = DECODE_INSTRUCTION;
+            end
+
+            DECODE_INSTRUCTION: begin
+                unique case (opcode)
+                    // R type instruction
+                    7'b0110011: begin
+                        next_state = ALU;
+                        sel_op1 = 1'b0;
+                        sel_op2 = 1'b0;
+                    end
+                    // I type instruction
+                    7'b0010011: begin
+                        next_state = ALU;
+                        sel_op1 = 1'b0;
+                        sel_op2 = 1'b1;
+                    end
+                    // S type instruction
+                    7'b0100011: begin
+                        next_state = ALU;
+                        sel_op1 = 1'b0;
+                        sel_op2 = 1'b1;
+                        alu_ctrl = 4'b0000; // add rs1 and immediate
+                    end
+                endcase
+            end
+
+            ALU: begin
+                unique case (opcode)
+                    // R and I type instructions
+                    (7'b0110011 || 7'b0010011): begin
+                        next_state = STORE_RDV;
+                    end
+                endcase
+            end
+
+            STORE_RDV:
+                next_state = FETCH_INSTRUCTION;
+
+            // default: next_state = ;
+        endcase
+    end
 
     // sel_op1
     always_comb begin
