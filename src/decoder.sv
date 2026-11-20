@@ -1,8 +1,6 @@
 //immed value gen
 
 module decoder(
-    input logic clk,
-    input logic rst,
     input logic [31:0] instr,
 
     output logic [6:0] opcode,

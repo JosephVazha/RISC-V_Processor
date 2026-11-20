@@ -40,27 +40,27 @@ module controller (
     logic [3:0] alu_ctrl;
     logic [31:0] alu_out;
 
-    localparam FETCH_INSTRUCTION = 2'b0;
-    localparam DECODE_INSTRUCTION = 2'b01;
-    localparam ALU = 2'b10;
-    localparam STORE_RDV = 2'b11;
+    localparam FETCH_INSTRUCTION = 3'b0;
+    localparam DECODE_INSTRUCTION = 3'b001;
+    localparam RESULT = 3'b010;
+    localparam STORE_RDV = 3'b011;
 
-    logic state = FETCH_INSTRUCTION;
-    logic next_state;
+    logic [2:0] state = FETCH_INSTRUCTION;
+    logic [2:0] next_state;
 
     program_counter u1 (
         // inputs
-        .clk        (clk),
-        .reset      (rst),
+        .clk            (clk),
+        .reset          (rst),
+        .pc_in          (pc_in),
+        .pc_sel         (pc_sel),
+        .branch_target  (branch_target),
         // outputs
-        .PC_in      (pc_in),
-        .PC_out     (pc_out)
+        .PC_out         (pc_out)
     );
 
     decoder u2 (
         // inputs
-        .clk        (clk),
-        .rst        (rst),
         .instr      (instr),
         // outputs
         .opcode     (opcode),
@@ -97,8 +97,6 @@ module controller (
 
     alu u5 (
         // inputs
-        .clk        (clk),
-        .rst        (rst),
         .op1        (op1),
         .op2        (op2),
         .alu_ctrl   (alu_ctrl),
@@ -109,6 +107,11 @@ module controller (
     // main controller state machine
     always_comb begin
         next_state = state;
+        wren       = 1'b0;
+        sel_op1    = 1'b0;
+        sel_op2    = 1'b0;
+        rd_sel     = 2'b00;
+
         unique case (state)
             FETCH_INSTRUCTION: begin
                 next_state = DECODE_INSTRUCTION;
@@ -118,40 +121,79 @@ module controller (
                 unique case (opcode)
                     // R type instruction
                     7'b0110011: begin
-                        next_state = ALU;
+                        next_state = RESULT;
                         sel_op1 = 1'b0;
                         sel_op2 = 1'b0;
                     end
                     // I type instruction
                     7'b0010011: begin
-                        next_state = ALU;
+                        next_state = RESULT;
                         sel_op1 = 1'b0;
                         sel_op2 = 1'b1;
                     end
                     // S type instruction
                     7'b0100011: begin
-                        next_state = ALU;
+                        // next_state = ;
                         sel_op1 = 1'b0;
                         sel_op2 = 1'b1;
-                        alu_ctrl = 4'b0000; // add rs1 and immediate
+                    end
+                    // B type instruction
+                    7'b1100011: begin
+                        next_state = RESULT;
+                    end
+                    // LUI
+                    7'b0110111: begin
+                        next_state = RESULT;
+                    end
+                    // AUIPC, J type instruction
+                    7'b0010111, 7'b1101111: begin
+                        next_state = RESULT;
+                        sel_op1 = 1'b1;
+                        sel_op2 = 1'b1;
                     end
                 endcase
             end
 
-            ALU: begin
+            RESULT: begin
                 unique case (opcode)
-                    // R and I type instructions
-                    (7'b0110011 || 7'b0010011): begin
+                    // R and I type instructions, AUIPC
+                    7'b0110011, 7'b0010011, 7'b0010111: begin
+                        rd_sel = 2'b00;
+                        next_state = STORE_RDV;
+                    end
+                    // LUI
+                    7'b0110111: begin
+                        rd_sel = 2'b11;
+                        next_state = STORE_RDV;
+                    end
+                    // J type instruction
+                    7'b1101111: begin
+                        rd_sel = 2'b10;
                         next_state = STORE_RDV;
                     end
                 endcase
             end
 
-            STORE_RDV:
+            STORE_RDV: begin
+                wren = 1'b1;
                 next_state = FETCH_INSTRUCTION;
 
+                // J type instruction
+                if (opcode == 7'b1101111) begin
+                    pc_in = alu_out;
+                end
+            end
             // default: next_state = ;
         endcase
+    end
+
+    // clocking FSM
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            state <= FETCH_INSTRUCTION;
+        end else begin
+            state <= next_state;
+        end
     end
 
     // sel_op1
