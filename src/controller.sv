@@ -9,10 +9,12 @@
 // fetching instruction, decoding instruction, execute (calculate address),
 // write into / read from data memory, write to register
 
-module controller (
+module controller #(
+    parameter IMem = "sim/program",
+    parameter DMem = "sim/data"
+)(
     input logic clk,
     input logic rst,
-    input logic [31:0] instr
 );
 
     logic sel_op1;
@@ -48,11 +50,45 @@ module controller (
     logic [2:0] state = FETCH_INSTRUCTION;
     logic [2:0] next_state;
 
+    logic [31:0] dmem_rdata;
+    logic dmem_we;
+    logic [31:0] dmem_addr;
+    logic [31:0] dmem_wdata;
+    
+    logic pc_commit;
+    logic redirect;
+    logic pc_sel;
+
+    logic [31:0] redirect_target;
+    logic branch_condtion;
+
+            
+    memory #(
+        .IMEM_INIT_FILE_PREFIX (IMem)
+        .DMEM_INIT_FILE_PREFIX (DMem)
+    // Set DMEM_INIT_FILE_PREFIX too if your program needs initialized data.
+    ) memory_unit (
+        .clk           (clk),
+        .funct3        (funct3),
+        .dmem_wren     (dmem_we),
+        .dmem_address  (dmem_addr),
+        .dmem_data_in  (dmem_wdata),
+        .imem_address  (pc_out),
+        .imem_data_out (instr),
+        .dmem_data_out (dmem_rdata),
+        .reset         (),       // This output is tied high; not for CPU reset.
+        .led           (),
+        .red           (),
+        .green         (),
+        .blue          ()
+    );
+
+
     program_counter u1 (
         // inputs
         .clk            (clk),
         .reset          (rst),
-        .pc_in          (pc_in),
+        .PC_in       (pc_out),
         .pc_sel         (pc_sel),
         .branch_target  (branch_target),
         // outputs
@@ -111,7 +147,7 @@ module controller (
         sel_op1    = 1'b0;
         sel_op2    = 1'b0;
         rd_sel     = 2'b00;
-
+        
         unique case (state)
             FETCH_INSTRUCTION: begin
                 next_state = DECODE_INSTRUCTION;
@@ -139,7 +175,16 @@ module controller (
                     end
                     // B type instruction
                     7'b1100011: begin
-                        next_state = RESULT;
+                       unique case (funct3)
+                            3'b000: branch_condition = (rs1v == rs2v); // BEQ
+                            3'b001: branch_condition = (rs1v != rs2v); // BNE
+                            3'b100: branch_condition = ($signed(rs1v) < $signed(rs2v)); // BLT
+                            3'b101: branch_condition = ($signed(rs1v) >= $signed(rs2v)); // BGE
+                            3'b110: branch_condition = (rs1v < rs2v);  // BLTU
+                            3'b111: branch_condition = (rs1v >= rs2v); // BGEU
+                            default: branch_condition = 1'b0;
+                        endcase
+                         next_state = RESULT;
                     end
                     // LUI
                     7'b0110111: begin
