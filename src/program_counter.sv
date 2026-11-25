@@ -17,7 +17,7 @@ always_ff @(posedge clk or posedge reset) begin
       PC_out <= 32'h1000;
    else if (pc_sel)
       PC_out <= branch_target;
-   else
+   else if (pc_en)
       PC_out <= PC_in + 32'd4;
    end
 endmodule
