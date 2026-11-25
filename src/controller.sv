@@ -14,7 +14,7 @@ module controller #(
     parameter DMem = "sim/data"
 )(
     input logic clk,
-    input logic rst,
+    input logic rst
 );
 
     logic sel_op1;
@@ -31,6 +31,7 @@ module controller #(
     logic [4:0] rs2;
     logic [6:0] funct7;
     logic [31:0] imm_val;
+    logic [31:0] instr;    
 
     logic wren = 1'b0;
     logic [31:0] rs1v;
@@ -59,12 +60,13 @@ module controller #(
     logic redirect;
     logic pc_sel;
 
+
     logic [31:0] redirect_target;
     logic branch_condtion;
-
+    logic [31:0] branch_target;
             
     memory #(
-        .IMEM_INIT_FILE_PREFIX (IMem)
+        .IMEM_INIT_FILE_PREFIX (IMem),
         .DMEM_INIT_FILE_PREFIX (DMem)
     // Set DMEM_INIT_FILE_PREFIX too if your program needs initialized data.
     ) memory_unit (

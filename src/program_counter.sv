@@ -3,6 +3,7 @@ module program_counter (
    input logic    clk,
    input logic    reset,
    input logic    pc_sel,
+   input logic    pc_en,
    input logic [31:0] branch_target,   
 
 

@@ -17,8 +17,8 @@ module register_file (
 
 // read
     always_comb begin
-        rs1v = registers[rs1];
-        rs2v = registers[rs2];
+        rs1v = (rs1 == 5'd0) ? 32'b0 : registers[rs1];
+        rs2v = (rs2 == 5'd0) ? 32'b0 : registers[rs2];
     end
 
 // write
