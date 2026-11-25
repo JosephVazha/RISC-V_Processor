@@ -93,6 +93,7 @@ module controller #(
         .PC_in       (pc_out),
         .pc_sel         (pc_sel),
         .branch_target  (branch_target),
+        .pc_en(pc_commit),        
         // outputs
         .PC_out         (pc_out)
     );
@@ -269,11 +270,13 @@ module controller #(
             2'b00:
                 rdv = alu_out;
             2'b01:
-                rdv = dmem_out;
+                rdv = dmem_dta
             2'b10:
                 rdv = pc_out;
             2'b11:
                 rdv = imm_val;
+            default: 
+                rdv = 32'b0;
         endcase
     end
 
