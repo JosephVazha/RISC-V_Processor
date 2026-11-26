@@ -4,7 +4,7 @@ module controller_tb;
     logic clk;
     logic rst;
 
-    // Instantiate CPU
+
     controller dut (
         .clk (clk),
         .rst (rst)
@@ -37,7 +37,7 @@ module controller_tb;
         // Wait for the end
         wait (dut.state == 3'b011);
 
-        // Register file writes on the next rising edge
+        // Register file writes on posedge
         @(posedge clk);
         #1;
 
