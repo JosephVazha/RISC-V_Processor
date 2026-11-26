@@ -3,6 +3,7 @@
 `include "register_file.sv"
 `include "alu_control.sv"
 `include "alu.sv"
+`include "memory.sv"
 
 // still needs data memory module (to select what data goes into destination register)
 // we should probably make a finite state machine
@@ -56,14 +57,14 @@ module controller #(
     logic [31:0] dmem_addr;
     logic [31:0] dmem_wdata;
     
-    logic pc_commit;
+    logic pc_commit = 1'b0;
     logic redirect;
     logic pc_sel;
 
 
     logic [31:0] redirect_target;
-    logic branch_condtion;
-    logic [31:0] branch_target;
+    logic branch_condition;
+    logic [31:0] branch_target = 32'b0;
             
     memory #(
         .IMEM_INIT_FILE_PREFIX (IMem),
@@ -224,12 +225,8 @@ module controller #(
 
             STORE_RDV: begin
                 wren = 1'b1;
+                pc_commit = 1'b1;
                 next_state = FETCH_INSTRUCTION;
-
-                // J type instruction
-                if (opcode == 7'b1101111) begin
-                    pc_in = alu_out;
-                end
             end
             // default: next_state = ;
         endcase
@@ -270,7 +267,7 @@ module controller #(
             2'b00:
                 rdv = alu_out;
             2'b01:
-                rdv = dmem_dta
+                rdv = dmem_rdata;
             2'b10:
                 rdv = pc_out;
             2'b11:

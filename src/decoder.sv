@@ -39,7 +39,7 @@ always_comb begin
         end
         default:
             imm_val = 32'b0; 
-        end
+        
     endcase
 end
 

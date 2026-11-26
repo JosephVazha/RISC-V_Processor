@@ -18,7 +18,7 @@ module alu_control (
 //                        7'b0100000:
 //   
         
-         alu_control = 4'b1111;
+         alu_ctrl = 4'b1111;
          // add, addi
         if ((opcode == 7'b0110011 && funct3 == 3'b000 && funct7 == 7'b0000000)
         || (opcode == 7'b0010011 && funct3 == 3'b000)) begin

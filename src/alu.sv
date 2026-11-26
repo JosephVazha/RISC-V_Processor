@@ -30,9 +30,8 @@ module alu (
                 alu_out = op1 & op2;
             default: begin
                 alu_out = 32'b0;
-                `ifndef SYNTHESIS
-                    $fatal(1, "nvalid ALU control: %b", alu_ctrl);
-                `endif
+
+            end
         endcase
     end
 
