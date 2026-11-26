@@ -48,7 +48,9 @@ module controller #(
     localparam DECODE_INSTRUCTION = 3'b001;
     localparam RESULT = 3'b010;
     localparam STORE_RDV = 3'b011;
-
+    
+    localparam MEM_READ_WAIT = 3'b100;
+    localparam MEM_WRITE = 3'b101;
     logic [2:0] state = FETCH_INSTRUCTION;
     logic [2:0] next_state;
 
@@ -61,11 +63,13 @@ module controller #(
     logic redirect;
     logic pc_sel;
 
-
+    logic [31:0] link_addr;
     logic [31:0] redirect_target;
     logic branch_condition;
     logic [31:0] branch_target = 32'b0;
-            
+    
+    assign ;ink_Addr = pc_out + 32'd4;
+                
     memory #(
         .IMEM_INIT_FILE_PREFIX (IMem),
         .DMEM_INIT_FILE_PREFIX (DMem)
@@ -151,7 +155,18 @@ module controller #(
         sel_op1    = 1'b0;
         sel_op2    = 1'b0;
         rd_sel     = 2'b00;
+
+        //Branch var initiliazations
+        pc_commit = 1'b0;
+        pc_sel = 1'b0;
+        branch_target = 32'b0;
+        branch_condition = 1'b0;
         
+        //mem var initilzatioans
+        dmem_we = 1'b0;
+        dmem_addr = 32'b0;
+        dmem_wdata = 32'b0;
+
         unique case (state)
             FETCH_INSTRUCTION: begin
                 next_state = DECODE_INSTRUCTION;
@@ -171,9 +186,9 @@ module controller #(
                         sel_op1 = 1'b0;
                         sel_op2 = 1'b1;
                     end
-                    // S type instruction
+                    // S type instruction sw
                     7'b0100011: begin
-                        // next_state = ;
+                        next_state = RESULT;
                         sel_op1 = 1'b0;
                         sel_op2 = 1'b1;
                     end
@@ -200,33 +215,140 @@ module controller #(
                         sel_op1 = 1'b1;
                         sel_op2 = 1'b1;
                     end
+                    //jalr
+                    7'b1100111: begin
+                        next_state = RESULT;
+                        sel_op1 = 1'b0;
+                        sel_op2 = 1'b1;
+                    end
+                    //lw
+                    7'b0000011: begin
+                        next_State = RESULT;
+                        sel_op1 = 1'b0;
+                        sel_op2 = 1'b1;
+                    end
+                    
+                    
                 endcase
             end
 
             RESULT: begin
                 unique case (opcode)
                     // R and I type instructions, AUIPC
-                    7'b0110011, 7'b0010011, 7'b0010111: begin
-                        rd_sel = 2'b00;
+                   // 7'b0110011, 7'b0010011, 7'b0010111: begin
+                   //     rd_sel = 2'b00;
+                   //     next_state = STORE_RDV;
+                   // end
+                   // LUI
+                   // 7'b0110111: begin
+                   //     rd_sel = 2'b11;
+                   //     next_state = STORE_RDV;
+                   // end
+                   // // J type instruction
+                   // 7'b1101111: begin
+                   //     rd_sel = 2'b10;
+                   //     next_state = STORE_RDV;
+                   // end
+
+                    //R-Type
+                    7'b0110011: begin
                         next_state = STORE_RDV;
                     end
-                    // LUI
+                    
+                    //I-Type op
+                    7'b0010011: begin
+                        sel_op2 = 1'b1;
+                        next_state = STORE_RDV;
+                    end
+                    
+                    //LW
+                    7'b0000011: begin
+                        sel_op2 = 1'b1;
+                        dmem_addr = alu_out;
+                        next_state = MEM_READ_WAIT;
+                    end
+            
+                    //sw
+                    7'b0100011: begin
+                        sel_op2 = 1'b1;
+                        dmem_addr = alu_out;
+                        dmem_wdata = rs2v;
+                        next_state = MEM_WRITE;
+                    end
+                    
+                    // AUIPC
+                    7'b0010111: begin
+                        sel_op1 = 1'b1;
+                        sel_op2 = 1'b1;
+                        next_state = STORE_RDV;
+                    end
+                    // lui
                     7'b0110111: begin
-                        rd_sel = 2'b11;
                         next_state = STORE_RDV;
                     end
-                    // J type instruction
-                    7'b1101111: begin
-                        rd_sel = 2'b10;
-                        next_state = STORE_RDV;
+
+                   //jal
+                   7'b1101111: begin
+                       sel_op1 = 1'b1;
+                       sel_op2 = 1'b1;
+                       next_State = STORE_RDV;
+                   end
+                   //jaklr
+                    7'b1100111: begin
+                       sel_op2 = 1'b1;
+                       next_State = STORE_RDV;
                     end
+                
+                
                 endcase
+            end
+            MEM_READ_WAIT: begin
+                dmem_addr = alu_out;
+                sel_op2 = 1'b1;
+                next_State = STORE_RDV;
+            end
+            MEM_WRITE: begin
+                dmem_addr = alu_out;
+                dmem_wdata = rs2v;
+                dmem_we = 1'b1;
+
+                pc_commit = 1'b1;
+                next_State = FETCH_INSTRUCTION;
             end
 
             STORE_RDV: begin
-                wren = 1'b1;
+                
                 pc_commit = 1'b1;
                 next_state = FETCH_INSTRUCTION;
+                
+                unique case (opcode)
+                            //lw7'b0000011: begin
+                    wren = 1'b1;
+                    rd_sel = 2'b01;
+                end
+
+                // jal,jalr
+                7'b1101111, 7'b1100111: begin
+                    wren = 1'b1;
+                    rd_sel = 2'b10;
+                    pc_sel = 1'b1;
+                    branch_target = redirect_target;
+                end
+
+                // lui
+                7'b0110111: begin
+                    wren = 1'b1;
+                    rd_sel = 2'b11;
+                end
+
+                // ri,aiupic
+                7'b0110011, 7'b0010011, 7'b0010111: begin
+                    wren = 1'b1;
+                    rd_sel = 2'b00;
+                end
+             endcase
+                
+                
             end
             // default: next_state = ;
         endcase
@@ -269,7 +391,7 @@ module controller #(
             2'b01:
                 rdv = dmem_rdata;
             2'b10:
-                rdv = pc_out;
+                rdv = link_addr;
             2'b11:
                 rdv = imm_val;
             default: 
