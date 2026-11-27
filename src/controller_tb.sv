@@ -13,7 +13,15 @@ module controller_tb;
     // 100 MHz clock (10 ns period)
     initial clk = 1'b0;
     always #5 clk = ~clk;
-
+    
+    task automatic check_pc(input logic [31:0] expected_val);
+        begin
+            wait (dut.pc.out === expected_val);
+                @(negedge clk);
+                #1;
+        end
+    endtask
+    
     initial begin
         // Reset CPU
         rst = 1'b1;
